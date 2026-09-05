@@ -1,0 +1,15 @@
+#!/data/data/com.termux/files/usr/bin/bash
+python -c 'import glob,os; cpu=[]; gpu=[]; bat=[]; 
+for z in glob.glob("/sys/class/thermal/thermal_zone*"):
+ n=open(z+"/type").read().strip().lower()
+ try: x=float(open(z+"/temp").read().strip()); x=x/1000 if x>1000 else x
+ except: continue
+ if "trip" in n: continue
+ if "gpu" in n: gpu.append(x)
+ elif "battery" in n: bat.append(x)
+ elif "cpu" in n: cpu.append(x)
+out=[]
+if cpu: out.append("CPU max: %.1f C" % max(cpu))
+if gpu: out.append("GPU max: %.1f C" % max(gpu))
+if bat: out.append("Battery: %.1f C" % max(bat))
+print(" | ".join(out))'

@@ -1,0 +1,15 @@
+#!/data/data/com.termux/files/usr/bin/bash
+MODE="auto"; SPEED="fast"; VERBOSE="0"
+help(){ echo "Usage: gemma4 [OPTIONS] QUESTION"; echo; echo "Options:"; echo "  -r, --reasoning       Longer, more detailed answer"; echo "  -l, --local           Local model only; never search the web"; echo "  -w, --web             Force web search"; echo "  --verbose1            Show CPU, GPU and battery temperatures"; echo "  -h, --help            Show this help message"; }
+while [ $# -gt 0 ]; do case "$1" in -h|--help) help; exit 0;; -r|--reasoning) SPEED="reasoning"; shift;; -l|--local) MODE="local"; shift;; -w|--web) MODE="web"; shift;; --verbose1) VERBOSE="1"; shift;; --) shift; break;; *) break;; esac; done
+Q="$*"
+if [ -z "$Q" ]; then help; exit 1; fi
+ask(){ python -c 'import json,sys; print(json.dumps({"model":"gemma4-e4b-phone","messages":[{"role":"system","content":sys.argv[1]},{"role":"user","content":sys.argv[2]}],"temperature":0.1,"max_tokens":int(sys.argv[3])},ensure_ascii=False))' "$1" "$2" "$3" | curl -s --max-time 600 http://127.0.0.1:8080/v1/chat/completions -H "Content-Type: application/json" -d @-; }
+out(){ python -c 'import sys,json; print(json.load(sys.stdin)["choices"][0]["message"]["content"].strip())' 2>/dev/null; }
+start=$(date +%s); TOK=100; [ "$SPEED" = "reasoning" ] && TOK=500; SRC="local"
+webanswer(){ R="$(gemma-web "$Q" | head -n 1)"; ask "Answer in Russian. Give a direct, concise answer based only on the search result. Do not mention search, knowledge limits, or URLs." "Question: $Q Search result: $R" "$TOK" | out; }
+if [ "$MODE" = "web" ]; then A="$(webanswer)"; SRC="web"; elif [ "$MODE" = "local" ]; then A="$(ask "Answer in Russian. Be direct and complete. If the user asks for an explanation, finish every sentence and do not stop mid-thought." "$Q" "$TOK" | out)"; else A="$(ask "Return only WEB if the question requires changing information: news, software version, price, weather, exchange rate, schedule, date, or current event. Otherwise answer briefly in Russian." "$Q" 20 | out)"; if [ "$A" = "WEB" ]; then A="$(webanswer)"; SRC="web"; else A="$(ask "Answer in Russian. Be direct and complete. If the user asks for an explanation, finish every sentence and do not stop mid-thought." "$Q" "$TOK" | out)"; fi; fi
+end=$(date +%s)
+echo "$A"
+echo "[source: $SRC | mode: $SPEED | time: $((end-start))s]"
+if [ "$VERBOSE" = "1" ]; then gemma-temp; fi

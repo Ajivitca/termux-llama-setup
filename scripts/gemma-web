@@ -1,0 +1,2 @@
+#!/data/data/com.termux/files/usr/bin/bash
+ddgr --json --num 5 "$*" 2>/dev/null | python -c 'import sys,json; [print("Заголовок: "+x.get("title","")+" | Текст: "+x.get("abstract",x.get("body",""))+" | Источник: "+x.get("url","")) for x in json.load(sys.stdin)]'
