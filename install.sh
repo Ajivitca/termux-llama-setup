@@ -13,7 +13,8 @@ build_llama(){
   echo "==> [1/3] Installing dependencies and building llama.cpp with Vulkan..."
   pkg update -y
   pkg upgrade -y
-  pkg install -y git cmake clang make python curl ddgr vulkan-loader vulkan-tools vulkan-headers glslang
+  pkg install -y git cmake clang make python curl vulkan-loader vulkan-tools vulkan-headers glslang
+pip install ddgr
   if [ ! -d "$LLAMA/.git" ]; then git clone https://github.com/ggml-org/llama.cpp.git "$LLAMA"; fi
   git -C "$LLAMA" pull --ff-only
   rm -rf "$LLAMA/build"
