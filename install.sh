@@ -12,8 +12,7 @@ build_llama(){
   pkg update -y
   pkg upgrade -y
   pkg install -y git cmake clang make ninja python curl vulkan-loader vulkan-tools vulkan-headers glslang bison
-  pip install --upgrade pip
-  pip install ddgr
+  pip install --break-system-packages ddgr
   echo "Building Shaderc and glslc..."
   if [ ! -d "$SHADERC/.git" ]; then git clone https://github.com/google/shaderc.git "$SHADERC"; fi
   cd "$SHADERC"
