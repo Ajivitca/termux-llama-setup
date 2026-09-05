@@ -149,3 +149,97 @@ gemma4 --help
 ```
 
 If `gemma4` is not found, run `source ~/.bashrc` or restart Termux. If the server health check fails, start `bash scripts/start-server.sh` again and inspect its output for Vulkan backend information.
+
+---
+
+# Русская инструкция
+
+## POCO F8 Ultra
+
+Настройка рассчитана на **POCO F8 Ultra 16 GB / 512 GB**, Snapdragon 8 Elite Gen 5 и Adreno 840. `llama.cpp` собирается с Vulkan по умолчанию (`-DGGML_VULKAN=ON`) и запускается с GPU offload `-ngl 99`.
+
+## Установка
+
+1. Termux: https://github.com/termux/termux-app/releases
+2. Установи актуальный APK `apt-android-7`.
+3. Открой Termux и выполни:
+
+```bash
+pkg update -y
+pkg upgrade -y
+pkg install -y git
+git clone https://github.com/ajivitca/termux-llama-setup.git
+cd ~/termux-llama-setup
+bash scripts/install.sh
+source ~/.bashrc
+gemma4 --help
+```
+
+## Сборка Vulkan
+
+```bash
+bash scripts/build-llama.sh
+test -x ~/llama.cpp/build/bin/llama-server && echo "OK: llama-server найден" || echo "ERROR: llama-server не найден"
+```
+
+## Загрузка модели
+
+```bash
+bash scripts/download-model.sh
+ls -lh ~/models/gemma4-e4b/google_gemma-4-E4B-it-Q4_K_M.gguf
+```
+
+## Запуск сервера
+
+В первой сессии Termux:
+
+```bash
+bash scripts/start-server.sh
+```
+
+Во второй сессии:
+
+```bash
+curl http://127.0.0.1:8080/health
+```
+
+Локальный Web UI: http://127.0.0.1:8080
+
+Сервер доступен только на самом телефоне: `127.0.0.1` не открывает его в Wi-Fi/LAN.
+
+## Проверки ассистента
+
+Локальный запрос без web-поиска:
+
+```bash
+gemma4 --local "Объясни квантовую запутанность"
+```
+
+Автоматический web-поиск по решению скрипта:
+
+```bash
+gemma4 "Какая сейчас погода в Москве?"
+```
+
+В конце ожидается `[source: web | ...]`.
+
+Длинный ответ:
+
+```bash
+gemma4 --reasoning "Реши пошагово: поезд проехал 180 км за 3 часа. Какая средняя скорость?"
+```
+
+Температуры CPU, GPU и батареи:
+
+```bash
+gemma4 --verbose1 "Кратко объясни TCP handshake"
+```
+
+Проверка процесса и API:
+
+```bash
+pgrep -af llama-server
+curl http://127.0.0.1:8080/health
+```
+
+Не публикуй GGUF-модели, логи, токены или приватные ключи.
