@@ -18,3 +18,134 @@ This setup targets the **POCO F8 Ultra, 16 GB RAM / 512 GB storage**, using the 
 
 ```bash
 cmake -S ~/llama.cpp -B ~/llama.cpp/build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+
+## Full installation guide: POCO F8 Ultra
+
+This guide targets the **POCO F8 Ultra (16 GB RAM / 512 GB storage)** with Snapdragon 8 Elite Gen 5 and Adreno 840.
+
+### 1. Install Termux
+
+1. Open the official Termux release page: https://github.com/termux/termux-app/releases
+2. Download and install the current `apt-android-7` APK for Android 7 or newer.
+3. Do not mix F-Droid/GitHub Termux builds with the Play Store build because they use different signing keys.
+4. Open Termux after installation and allow storage access only if you need it:
+
+```bash
+termux-setup-storage
+```
+
+### 2. Clone this repository
+
+Run these commands in Termux:
+
+```bash
+pkg update -y
+pkg upgrade -y
+pkg install -y git
+git clone https://github.com/ajivitca/termux-llama-setup.git
+cd ~/termux-llama-setup
+```
+
+### 3. Install the CLI tools
+
+```bash
+bash scripts/install.sh
+source ~/.bashrc
+gemma4 --help
+```
+
+Expected result: the command prints its option list. The installer places `gemma4`, `gemma-web`, and `gemma-temp` in `~/bin`.
+
+### 4. Build llama.cpp with Vulkan
+
+This is the default build path. It compiles llama.cpp with `-DGGML_VULKAN=ON` for Adreno GPU acceleration:
+
+```bash
+bash scripts/build-llama.sh
+```
+
+Verify that the binary was created:
+
+```bash
+test -x ~/llama.cpp/build/bin/llama-server && echo "OK: llama-server exists" || echo "ERROR: llama-server is missing"
+```
+
+### 5. Download Gemma 4 E4B
+
+```bash
+bash scripts/download-model.sh
+```
+
+Verify the model file:
+
+```bash
+ls -lh ~/models/gemma4-e4b/google_gemma-4-E4B-it-Q4_K_M.gguf
+```
+
+### 6. Start the local model server
+
+Keep this command running in the first Termux session:
+
+```bash
+bash scripts/start-server.sh
+```
+
+The active configuration is Vulkan build, `-ngl 99` GPU-layer offload, 2048-token context, 6 CPU threads, and the local address `127.0.0.1:8080`.
+
+### 7. Check the local server
+
+Open a second Termux session and run:
+
+```bash
+curl http://127.0.0.1:8080/health
+```
+
+Expected result: a health response such as `ok`. Open `http://127.0.0.1:8080` in the phone browser to use the built-in local Web UI.
+
+### 8. Test local mode
+
+This sends no query to a search engine:
+
+```bash
+gemma4 --local "Explain quantum entanglement in Russian"
+```
+
+The final line should include `[source: local`.
+
+### 9. Test automatic web routing
+
+The wrapper first asks the local model whether a request needs current information. Use a time-sensitive question:
+
+```bash
+gemma4 "What is the current weather in Moscow?"
+```
+
+Expected result: the final line should include `[source: web`. The query is sent to DuckDuckGo via `ddgr`, then the local model creates a Russian answer from the returned search result.
+
+### 10. Test reasoning mode
+
+Reasoning mode raises the response limit from 100 to 500 tokens:
+
+```bash
+gemma4 --reasoning "Solve step by step: if a train travels 180 km in 3 hours, what is its average speed?"
+```
+
+The final line should include `mode: reasoning`.
+
+### 11. Test temperature output
+
+```bash
+gemma4 --verbose1 "Briefly explain the TCP handshake"
+```
+
+After the answer, the script prints available values such as `CPU max`, `GPU max`, and `Battery`. Missing values mean that the Android kernel did not expose a matching thermal zone to Termux.
+
+### 12. Useful checks
+
+```bash
+pgrep -af llama-server
+curl http://127.0.0.1:8080/health
+gemma4 --help
+```
+
+If `gemma4` is not found, run `source ~/.bashrc` or restart Termux. If the server health check fails, start `bash scripts/start-server.sh` again and inspect its output for Vulkan backend information.
