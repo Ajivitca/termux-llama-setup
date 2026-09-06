@@ -3,7 +3,7 @@ set -e
 LLAMA_DIR="$HOME/llama.cpp"
 
 pkg update -y
-pkg install -y git cmake clang make vulkan-loader-android vulkan-tools
+pkg install -y git cmake clang make vulkan-loader vulkan-headers glslang vulkan-tools
 
 if [ ! -d "$LLAMA_DIR/.git" ]; then
   git clone https://github.com/ggml-org/llama.cpp.git "$LLAMA_DIR"
